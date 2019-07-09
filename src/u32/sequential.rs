@@ -19,11 +19,10 @@ const DEAD: u32 = std::u32::MAX - 1;
 
 pub fn scc(network: &BooleanNetwork) {
     let mut sets = DisjointSets::new(network.state_count() as usize, 1234567890);
-    let mut dead = BitSet::new_empty(network.state_count() as usize);
     let mut stack: Vec<(StateId, VariableIterator)> = Vec::new();
 
     for root in network.states() {
-        if dead.is_set(root.value as usize) { continue }
+        if sets.get_payload(&root) == DEAD { continue }
 
         print!("\rRemaining {}                             ", network.state_count() - root.value as u64);
 
@@ -67,7 +66,6 @@ pub fn scc(network: &BooleanNetwork) {
                     // found component!
                     sets.set_payload(&s, DEAD)
                 }
-                dead.flip(s.value as usize);
             }
 
         }
