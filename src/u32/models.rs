@@ -1,5 +1,23 @@
 use crate::u32::bn::{BooleanNetwork, BooleanNetworkBuilder};
 
+/*
+    Regular expressions for simplified model building
+    ([a-z,A-Z,0-9,_]+) : \{0, 1}
+    let $1 = builder.make_variable("$1")
+
+    ([a-z,A-Z,0-9,_]+)_focal :=
+    builder.update_function(&$1, Box::new(move |s| {}));
+
+     &
+     &&
+
+    ([a-z,A-Z,0-9,_]+) = 1
+    s.get(&$1)
+
+    ([a-z,A-Z,0-9,_]+) = 0
+    !s.get(&$1)
+*/
+
 // 2^26 states (67 108 864)
 // Optimized: 18.03 s / 290 MB / 4.33b per state
 // 73088 components
