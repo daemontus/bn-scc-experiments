@@ -1,0 +1,8 @@
+[package]
+name = "biodivine"
+version = "0.1.0"
+authors = ["Samuel Pastva <daemontus@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rand = "0.7.0"
