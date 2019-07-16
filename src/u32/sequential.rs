@@ -43,6 +43,8 @@ pub fn scc(network: &BooleanNetwork) {
                         // t is newly discovered - add it to the stack!
                         sets.set_payload(&t, stack.len() as u32);
                         stack.push((t, network.variables()));
+                        // this has no performance impact since the branch is easy to predict...
+                        if stack.len() as u32 == DEAD { panic!("Stack overflow!") }
                     } else if payload != DEAD {
                         // t is already visited, but not dead, meaning we found a cycle.
                         // Now we have to merge everything on the stack with t, but skip
