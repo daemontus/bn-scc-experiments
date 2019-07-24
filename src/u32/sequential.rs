@@ -8,14 +8,14 @@ use std::collections::HashMap;
 /// Categorises states of the boolean network into disjoint sets of elements using the standard
 /// union-find structure. Additionally, for every set, we can remember one extra u32 value.
 /// Upon union, a minimum is computed from these two values.
-struct DisjointSets {
+pub struct DisjointSets {
     hash_mask: usize,
     is_root: BitSet,
     parent_pointer: Vec<u32>,
 }
 
-const FRESH: u32 = std::u32::MAX;
-const DEAD: u32 = std::u32::MAX - 1;
+pub const FRESH: u32 = std::u32::MAX;
+pub const DEAD: u32 = std::u32::MAX - 1;
 
 pub fn scc(network: &BooleanNetwork) {
     let mut sets = DisjointSets::new(network.state_count() as usize, 1234567890);
@@ -93,7 +93,7 @@ impl DisjointSets {
 
     /// Create a new disjoint sets structure using the given [capacity] (number of elements)
     /// and a [seed] for state key generator.
-    fn new(capacity: usize, seed: u64) -> DisjointSets {
+    pub fn new(capacity: usize, seed: u64) -> DisjointSets {
         let mut rnd = StdRng::seed_from_u64(seed);
         return DisjointSets {
             // hash mask is used for hashing state ids in order to implement Tarjan merge condition
@@ -105,13 +105,13 @@ impl DisjointSets {
         }
     }
 
-    fn is_root(&self, key: &StateId) -> bool {
+    pub fn is_root(&self, key: &StateId) -> bool {
         return self.is_root.is_set(key.value as usize)
     }
 
     /// Compute the representing index for the set given by [key]. During search,
     /// every non-trivial path is contracted by path halving.
-    fn find_root(&mut self, key: &StateId) -> usize {
+    pub fn find_root(&mut self, key: &StateId) -> usize {
         let mut item = key.value as usize;
         while !self.is_root.is_set(item) {
             let parent = self.parent_pointer[item] as usize;
@@ -127,19 +127,19 @@ impl DisjointSets {
     }
 
     /// Get the u32 payload of the given set.
-    fn get_payload(&mut self, key: &StateId) -> u32 {
+    pub fn get_payload(&mut self, key: &StateId) -> u32 {
         let root = self.find_root(key);
         return self.parent_pointer[root];
     }
 
     /// Set the u32 payload for the given set.
-    fn set_payload(&mut self, key: &StateId, payload: u32) {
+    pub fn set_payload(&mut self, key: &StateId, payload: u32) {
         let root = self.find_root(key);
         self.parent_pointer[root] = payload;
     }
 
     /// Union two sets.
-    fn union(&mut self, left: StateId, right: StateId) {
+    pub fn union(&mut self, left: StateId, right: StateId) {
         let root_left = self.find_root(&left);
         let root_right = self.find_root(&right);
         if root_left != root_right {

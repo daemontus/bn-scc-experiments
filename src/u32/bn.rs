@@ -46,7 +46,7 @@ pub struct StateIterator {
 /// Boolean network is a type of simple model with boolean variables and asynchronous update
 /// functions.
 pub struct BooleanNetwork {
-    update_functions: Vec<Box<dyn Fn(StateId) -> bool>>
+    update_functions: Vec<Box<dyn Fn(StateId) -> bool + Sync>>
 }
 
 /// Boolean network builder allows to create instances of [BooleanNetwork] in a relatively
@@ -54,7 +54,7 @@ pub struct BooleanNetwork {
 pub struct BooleanNetworkBuilder {
     variable_count: u32,
     variable_names: HashMap<VariableId, String>,
-    update_functions: HashMap<VariableId, Box<dyn Fn(StateId) -> bool>>
+    update_functions: HashMap<VariableId, Box<dyn Fn(StateId) -> bool + Sync>>
 }
 
 impl BitOr<VariableId> for StateId {
@@ -171,7 +171,7 @@ impl BooleanNetworkBuilder {
 
     /// Associate an update function with a variable.
     /// Panics if the variable does not exist or if it already has a function defined.
-    pub fn update_function(&mut self, variable: &VariableId, function: Box<dyn Fn(StateId) -> bool>) {
+    pub fn update_function(&mut self, variable: &VariableId, function: Box<dyn Fn(StateId) -> bool + Sync>) {
         if !self.variable_names.contains_key(variable) {
             panic!("Variable #{} does not exist in this boolean network.", variable);
         }
@@ -188,7 +188,7 @@ impl BooleanNetworkBuilder {
                 panic!("Update function for {} not specified.", name)
             }
         }
-        let mut functions: Vec<(VariableId, Box<dyn Fn(StateId) -> bool>)> = self.update_functions.drain().collect();
+        let mut functions: Vec<(VariableId, Box<dyn Fn(StateId) -> bool + Sync>)> = self.update_functions.drain().collect();
         functions.sort_by_key(|&(k, _)| k.value);
 
         return BooleanNetwork {

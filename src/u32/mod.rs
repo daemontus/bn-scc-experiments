@@ -6,3 +6,4 @@
 pub mod bn;
 pub mod models;
 pub mod sequential;
+pub mod parallel;

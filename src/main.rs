@@ -1,4 +1,5 @@
-use biodivine::u32::sequential::scc;
+//use biodivine::u32::sequential::scc;
+use biodivine::u32::parallel::parallel_scc;
 use biodivine::u32::models::t2dm_model;
 
 fn main() {
@@ -15,6 +16,6 @@ fn main() {
 
     let network = t2dm_model();//builder.build_network();
 
-    scc(&network);
+    parallel_scc(&network);
 }
 
