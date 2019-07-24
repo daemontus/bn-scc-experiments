@@ -16,6 +16,7 @@ fn main() {
 
     let network = t2dm_model();//builder.build_network();
 
-    parallel_scc(&network);
+    let args: Vec<String> = std::env::args().collect();
+    parallel_scc(&network, args[1].parse().unwrap());
 }
 

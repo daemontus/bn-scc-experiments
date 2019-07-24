@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 use rand::prelude::StdRng;
-use rand::{RngCore, SeedableRng, Rng};
+use rand::{RngCore, SeedableRng};
 use crate::u32::bn::{StateId, BooleanNetwork, VariableIterator};
 use crate::u32::sequential::{DisjointSets, DEAD, FRESH};
 use std::collections::HashMap;
@@ -8,25 +8,24 @@ use crossbeam::thread;
 use crate::bitset::AtomicBitSet;
 
 
-pub fn parallel_scc(network: &BooleanNetwork) {
+pub fn parallel_scc(network: &BooleanNetwork, parallelism: u32) {
 
     //let global_network = Arc::new(network);
     let global_sets = AtomicDisjointSets::new(network.state_count() as usize, 1234567890);
     let global_dead = AtomicBitSet::new_empty(network.state_count() as usize);
 
-    println!("Dead if {}", DEAD);
+    println!("State count {}", network.state_count());
 
+    let thread_id = AtomicU32::new(0);
     thread::scope(|thread_scope| {
-        for _ in 0..4 {
+        for _ in 0..parallelism {
             thread_scope.spawn(|_| {
 
                 let mut sets = DisjointSets::new(network.state_count() as usize, 1234567890);
                 let mut stack: Vec<(StateId, VariableIterator)> = Vec::new();
 
-                let mut rnd = rand::thread_rng();//StdRng::seed_from_u64(seed);
-                let key: u64 = rnd.gen();
-
-                //println!("Thread offset: {}", key);
+                let thread_id: u64 = thread_id.fetch_add(1, Ordering::SeqCst) as u64;
+                let key: u64 = thread_id * (network.state_count() / (parallelism as u64));
 
                 let mut explored: usize = 0;
                 let mut iter: usize = 0;
