@@ -1,6 +1,6 @@
 //use biodivine::u32::sequential::scc;
 use biodivine::u32::parallel::parallel_scc;
-use biodivine::u32::models::t2dm_model;
+use biodivine::u32::models::{hspc_model};
 
 fn main() {
     //let mut builder = BNBuilder::new();
@@ -14,7 +14,7 @@ fn main() {
     }));*/
 
 
-    let network = t2dm_model();//builder.build_network();
+    let network = hspc_model();//builder.build_network();
 
     let args: Vec<String> = std::env::args().collect();
     parallel_scc(&network, args[1].parse().unwrap());

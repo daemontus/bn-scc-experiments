@@ -29,6 +29,7 @@ pub fn parallel_scc(network: &BooleanNetwork, parallelism: u32) {
 
                 let mut explored: usize = 0;
                 let mut iter: usize = 0;
+                let mut max_stack_size: usize = 0;
 
                 for root_seq in network.states() {
                     let root = StateId { value: ((root_seq.value as u64 + key) % network.state_count()) as u32 };
@@ -65,6 +66,9 @@ pub fn parallel_scc(network: &BooleanNetwork, parallelism: u32) {
                                         // t is newly discovered - add it to the stack!
                                         sets.set_payload(&t, stack.len() as u32);
                                         stack.push((t, network.variables()));
+                                        if stack.len() > max_stack_size {
+                                            max_stack_size = stack.len()
+                                        }
                                         // this has no performance impact since the branch is easy to predict...
                                         if stack.len() as u32 == DEAD { panic!("Stack overflow!") }
                                     } else if /*payload != DEAD &&*/ !global_dead.is_set(set_of_t) {
@@ -105,12 +109,12 @@ pub fn parallel_scc(network: &BooleanNetwork, parallelism: u32) {
                 //    print!("\r");
                 //}
 
-                println!("Processed {} states in {} iterations", explored, iter)
+                println!("Processed {} states in {} iterations and max stack {}", explored, iter, max_stack_size)
             });
         }
     }).unwrap();
 
-    // count non-trivial components:
+    /*// count non-trivial components:
     let mut component_size: HashMap<usize, u32> = HashMap::new();
     for s in network.states() {
         if !global_sets.is_root(&s) {
@@ -120,7 +124,7 @@ pub fn parallel_scc(network: &BooleanNetwork, parallelism: u32) {
         }
         //println!("Root of {} is {}", s, sets.find_root(&s));
     }
-    println!("Non-trivial components: {}", component_size.len());
+    println!("Non-trivial components: {}", component_size.len());*/
 }
 
 

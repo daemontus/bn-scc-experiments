@@ -2,7 +2,7 @@ use crate::u32::bn::{BooleanNetwork, BooleanNetworkBuilder};
 
 /*
     Regular expressions for simplified model building
-    ([a-z,A-Z,0-9,_]+) : \{0, 1}
+    ([a-z,A-Z,0-9,_]+) : \{ ?0, 1}
     let $1 = builder.make_variable("$1")
 
     ([a-z,A-Z,0-9,_]+)_focal :=
@@ -17,6 +17,164 @@ use crate::u32::bn::{BooleanNetwork, BooleanNetworkBuilder};
     ([a-z,A-Z,0-9,_]+) = 0
     !s.get(&$1)
 */
+
+pub fn hspc_model() -> BooleanNetwork {
+    let mut builder = BooleanNetworkBuilder::new();
+    let bcatenin_h = builder.make_variable("bcatenin_h");
+    let gcsf = builder.make_variable("gcsf");
+    let gsk3b_h = builder.make_variable("gsk3b_h");
+    let gsk3b_m = builder.make_variable("gsk3b_m");
+    let tlrs_h = builder.make_variable("tlrs_h");
+    let tlrs_m = builder.make_variable("tlrs_m");
+    let cxcr7_h = builder.make_variable("cxcr7_h");
+    let gfi1_h = builder.make_variable("gfi1_h");
+    let vla4_h = builder.make_variable("vla4_h");
+    let bcatenin_m = builder.make_variable("bcatenin_m");
+    let erk_m = builder.make_variable("erk_m");
+    let pi3kakt_m = builder.make_variable("pi3kakt_m");
+    let ros_h = builder.make_variable("ros_h");
+    let ros_m = builder.make_variable("ros_m");
+    let vcam1_m = builder.make_variable("vcam1_m");
+    let cxcl12_m = builder.make_variable("cxcl12_m");
+    let cxcr4_h = builder.make_variable("cxcr4_h");
+    let fox_o3a_h = builder.make_variable("fox_o3a_h");
+    let fox_o3a_m = builder.make_variable("fox_o3a_m");
+    let nfk_b_h = builder.make_variable("nfk_b_h");
+    let nfk_b_m = builder.make_variable("nfk_b_m");
+    let il1 = builder.make_variable("il1");
+    let pi3kakt_h = builder.make_variable("pi3kakt_h");
+    let erk_h = builder.make_variable("erk_h");
+    let cx43_m = builder.make_variable("cx43_m");
+    let l_tlr = builder.make_variable("l_tlr");
+
+    // Inputs:
+    builder.update_function(&cx43_m, Box::new(move |s| {
+        (s | cx43_m)
+    }));
+    builder.update_function(&l_tlr, Box::new(move |s| {
+        (s | l_tlr)
+    }));
+
+    // Variables:
+    builder.update_function(&bcatenin_h, Box::new(move |s| {
+        (!(s | gsk3b_h))
+    }));
+    builder.update_function(&cxcr4_h, Box::new(move |s| {
+        (!(s | cxcr7_h)) && (!(s | gfi1_h)) && (s | cxcl12_m) && (!(s | gcsf))
+    }));
+    builder.update_function(&cxcr7_h, Box::new(move |s| {
+        (s | nfk_b_h) && (s | cxcl12_m)
+    }));
+    builder.update_function(&erk_h, Box::new(move |s| {
+        (!(s | cxcr4_h)) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (!(s | ros_h)) && (!(s | vla4_h)) && (s | gcsf) ||
+        (!(s | cxcr4_h)) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (!(s | ros_h)) && (s | vla4_h) ||
+        (!(s | cxcr4_h)) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (s | ros_h) ||
+        (!(s | cxcr4_h)) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (s | gfi1_h) && (!(s | gsk3b_h)) ||
+        (!(s | cxcr4_h)) && (s | cxcr7_h) && (!(s | fox_o3a_h)) && (!(s | gsk3b_h)) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (!(s | pi3kakt_h)) && (!(s | ros_h)) && (!(s | vla4_h)) && (s | gcsf) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (!(s | pi3kakt_h)) && (!(s | ros_h)) && (s | vla4_h) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (!(s | pi3kakt_h)) && (s | ros_h) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | gfi1_h)) && (!(s | gsk3b_h)) && (s | pi3kakt_h) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (s | gfi1_h) && (!(s | gsk3b_h)) ||
+        (s | cxcr4_h) && (s | cxcr7_h) && (!(s | fox_o3a_h)) && (!(s | gsk3b_h))
+    }));
+    builder.update_function(&fox_o3a_h, Box::new(move |s| {
+        (!(s | bcatenin_h)) && (!(s | erk_h)) && (!(s | pi3kakt_h)) && (s | ros_h) ||
+        (s | bcatenin_h) && (!(s | erk_h)) && (!(s | pi3kakt_h))
+    }));
+    builder.update_function(&gfi1_h, Box::new(move |s| {
+        (!(s | gfi1_h)) && (!(s | tlrs_h)) && (s | gcsf) ||
+        (!(s | gfi1_h)) && (s | tlrs_h)
+    }));
+    builder.update_function(&gsk3b_h, Box::new(move |s| {
+        (!(s | pi3kakt_h))
+    }));
+    builder.update_function(&nfk_b_h, Box::new(move |s| {
+        (!(s | fox_o3a_h)) && (!(s | pi3kakt_h)) && (!(s | ros_h)) && (s | tlrs_h) ||
+        (!(s | fox_o3a_h)) && (!(s | pi3kakt_h)) && (s | ros_h) ||
+        (!(s | fox_o3a_h)) && (s | pi3kakt_h) && (!(s | ros_h)) && (!(s | tlrs_h)) && (s | il1) ||
+        (!(s | fox_o3a_h)) && (s | pi3kakt_h) && (!(s | ros_h)) && (s | tlrs_h) ||
+        (!(s | fox_o3a_h)) && (s | pi3kakt_h) && (s | ros_h)
+    }));
+    builder.update_function(&pi3kakt_h, Box::new(move |s| {
+        (!(s | cxcr4_h)) && (!(s | fox_o3a_h)) && (!(s | ros_h)) && (!(s | tlrs_h)) && (!(s | vla4_h)) && (s | gcsf) ||
+        (!(s | cxcr4_h)) && (!(s | fox_o3a_h)) && (!(s | ros_h)) && (!(s | tlrs_h)) && (s | vla4_h) ||
+        (!(s | cxcr4_h)) && (!(s | fox_o3a_h)) && (!(s | ros_h)) && (s | tlrs_h) ||
+        (!(s | cxcr4_h)) && (!(s | fox_o3a_h)) && (s | ros_h) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | ros_h)) && (!(s | tlrs_h)) && (!(s | vla4_h)) && (s | gcsf) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | ros_h)) && (!(s | tlrs_h)) && (s | vla4_h) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (!(s | ros_h)) && (s | tlrs_h) ||
+        (s | cxcr4_h) && (!(s | cxcr7_h)) && (!(s | fox_o3a_h)) && (s | ros_h) ||
+        (s | cxcr4_h) && (s | cxcr7_h) && (!(s | fox_o3a_h))
+    }));
+    builder.update_function(&ros_h, Box::new(move |s| {
+        (!(s | fox_o3a_h)) && (s | tlrs_h) && (s | il1)
+    }));
+    builder.update_function(&tlrs_h, Box::new(move |s| {
+        (s | l_tlr)
+    }));
+    builder.update_function(&vla4_h, Box::new(move |s| {
+        (s | cxcr4_h) && (s | vcam1_m)
+    }));
+    builder.update_function(&bcatenin_m, Box::new(move |s| {
+        (!(s | fox_o3a_m)) && (!(s | gsk3b_m)) && (!(s | nfk_b_m))
+    }));
+    builder.update_function(&cxcl12_m, Box::new(move |s| {
+        (s | cx43_m) && (!(s | bcatenin_m)) && (!(s | nfk_b_m)) && (!(s | gcsf))
+    }));
+    builder.update_function(&erk_m, Box::new(move |s| {
+        (!(s | ros_m)) && (!(s | tlrs_m)) && (s | gcsf) ||
+        (!(s | ros_m)) && (s | tlrs_m) ||
+        (s | ros_m)
+    }));
+    builder.update_function(&fox_o3a_m, Box::new(move |s| {
+        (!(s | bcatenin_m)) && (!(s | erk_m)) && (s | ros_m) && (!(s | pi3kakt_m)) ||
+        (s | bcatenin_m) && (!(s | erk_m)) && (!(s | pi3kakt_m))
+    }));
+    builder.update_function(&gsk3b_m, Box::new(move |s| {
+        (!(s | pi3kakt_m))
+    }));
+    builder.update_function(&nfk_b_m, Box::new(move |s| {
+        (!(s | erk_m)) && (!(s | pi3kakt_m)) && (s | tlrs_m) ||
+        (!(s | erk_m)) && (s | pi3kakt_m) && (!(s | tlrs_m)) && (s | il1) ||
+        (!(s | erk_m)) && (s | pi3kakt_m) && (s | tlrs_m) ||
+        (s | erk_m) && (!(s | ros_m)) && (!(s | pi3kakt_m)) && (s | tlrs_m) ||
+        (s | erk_m) && (!(s | ros_m)) && (s | pi3kakt_m) && (!(s | tlrs_m)) && (s | il1) ||
+        (s | erk_m) && (!(s | ros_m)) && (s | pi3kakt_m) && (s | tlrs_m) ||
+        (s | erk_m) && (s | ros_m)
+    }));
+    builder.update_function(&ros_m, Box::new(move |s| {
+        (!(s | fox_o3a_m)) && (s | tlrs_m) && (s | il1)
+    }));
+    builder.update_function(&pi3kakt_m, Box::new(move |s| {
+        (!(s | ros_m)) && (!(s | tlrs_m)) && (s | gcsf) ||
+        (!(s | ros_m)) && (s | tlrs_m) ||
+        (s | ros_m)
+    }));
+    builder.update_function(&tlrs_m, Box::new(move |s| {
+        (s | l_tlr)
+    }));
+    builder.update_function(&vcam1_m, Box::new(move |s| {
+        (!(s | bcatenin_m)) ||
+        (s | bcatenin_m) && (!(s | nfk_b_m)) && (s | pi3kakt_m) ||
+        (s | bcatenin_m) && (s | nfk_b_m)
+    }));
+    builder.update_function(&il1, Box::new(move |s| {
+        (!(s | nfk_b_h)) && (!(s | pi3kakt_h)) && (!(s | ros_h)) && (!(s | nfk_b_m)) && (s | ros_m) && (!(s | pi3kakt_m)) ||
+        (!(s | nfk_b_h)) && (!(s | pi3kakt_h)) && (!(s | ros_h)) && (s | nfk_b_m) && (!(s | pi3kakt_m)) ||
+        (!(s | nfk_b_h)) && (!(s | pi3kakt_h)) && (s | ros_h) ||
+        (!(s | nfk_b_h)) && (s | pi3kakt_h) && (!(s | nfk_b_m)) && (s | ros_m) && (!(s | pi3kakt_m)) ||
+        (!(s | nfk_b_h)) && (s | pi3kakt_h) && (s | nfk_b_m) && (!(s | pi3kakt_m)) ||
+        (s | nfk_b_h) && (!(s | pi3kakt_h)) ||
+        (s | nfk_b_h) && (s | pi3kakt_h) && (!(s | nfk_b_m)) && (s | ros_m) && (!(s | pi3kakt_m)) ||
+        (s | nfk_b_h) && (s | pi3kakt_h) && (s | nfk_b_m) && (!(s | pi3kakt_m))
+    }));
+    builder.update_function(&gcsf, Box::new(move |s| {
+        (s | il1)
+    }));
+
+    return builder.build_network();
+}
 
 // 2^26 states (67 108 864)
 // Optimized: 18.03 s / 290 MB / 4.33b per state
