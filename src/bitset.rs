@@ -28,6 +28,18 @@ impl BitSet {
         }
     }
 
+    pub fn unset(&mut self, index: usize) {
+        let value_index = index / 32;
+        let bit_index = (index % 32) as u32;
+        self.values[value_index] = self.values[value_index] & !(1 << bit_index);
+    }
+
+    pub fn set(&mut self, index: usize) {
+        let value_index = index / 32;
+        let bit_index = (index % 32) as u32;
+        self.values[value_index] = self.values[value_index] | (1 << bit_index);
+    }
+
     pub fn is_set(&self, index: usize) -> bool {
         let value_index = index / 32;
         let bit_index = (index % 32) as u32;

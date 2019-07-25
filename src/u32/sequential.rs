@@ -17,6 +17,69 @@ pub struct DisjointSets {
 pub const FRESH: u32 = std::u32::MAX;
 pub const DEAD: u32 = std::u32::MAX - 1;
 
+pub fn scc_alt(network: &BooleanNetwork) {
+    let mut sets = DisjointSets::new(network.state_count() as usize, 1234567890);
+    let mut dead = BitSet::new_empty(network.state_count() as usize);
+    let mut on_stack = BitSet::new_empty(network.state_count() as usize);
+
+    let mut stack: Vec<(StateId, VariableIterator)> = Vec::new();
+
+    for root in network.states() {
+        let root_set = sets.find_root(&root);
+        if dead.is_set(root_set) { continue }
+
+        print!("\rRemaining {}                             ", network.state_count() - root.value as u64);
+
+        stack.push((root, network.variables()));
+        on_stack.set(root.value as usize);
+        sets.set_payload(&root, 0);
+
+        while let Some((s, it)) = stack.last_mut() {
+            if let Some(var) = it.next() {
+                if let Some(t) = network.successor(&s, &var) {
+                    let is_on_stack = on_stack.is_set(t.value as usize);
+                    let set_of_t = sets.find_root(&t);
+                    let is_dead = dead.is_set(set_of_t);
+                    let found_cycle = is_on_stack && !is_dead;
+                    if found_cycle {
+                        let mut i = stack.len() - 1;
+                        while sets.find_root(&stack[i].0) != sets.find_root(&t) {
+                            i = sets.get_payload(&stack[i].0) as usize;
+                            sets.union(stack[i].0, t);
+                            i -= 1;
+                        }
+                    }
+                    let fresh = !is_on_stack && !is_dead;
+                    if fresh {
+                        sets.set_payload(&t, stack.len() as u32);
+                        stack.push((t, network.variables()));
+                        on_stack.set(t.value as usize);
+                    }
+                }
+            } else {
+                let (s, _) = stack.pop().unwrap();
+                if sets.get_payload(&s) == stack.len() as u32 {
+                    dead.set(sets.find_root(&s));
+                }
+            }
+        }
+    }
+
+    print!("\r");
+
+    // count non-trivial components:
+    let mut component_size: HashMap<usize, u32> = HashMap::new();
+    for s in network.states() {
+        if !sets.is_root(&s) {
+            let root = sets.find_root(&s);
+            let v = component_size.entry(root).or_insert(1);
+            *v += 1;
+        }
+        //println!("Root of {} is {}", s, sets.find_root(&s));
+    }
+    println!("Non-trivial components: {}", component_size.len());
+}
+
 pub fn scc(network: &BooleanNetwork) {
     let mut sets = DisjointSets::new(network.state_count() as usize, 1234567890);
     let mut stack: Vec<(StateId, VariableIterator)> = Vec::new();
@@ -56,7 +119,7 @@ pub fn scc(network: &BooleanNetwork) {
                             to_merge_index = sets.get_payload(&stack[to_merge_index].0) as usize;
                             // union them with t
                             sets.union(stack[to_merge_index].0, t);
-                            // and then move one item lower
+                            // and thenco move one item lower
                             to_merge_index -= 1;    // "virtual" pop
                         }
                     }
