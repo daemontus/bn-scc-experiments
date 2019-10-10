@@ -3,7 +3,6 @@ use rand::prelude::StdRng;
 use rand::{RngCore, SeedableRng};
 use crate::u32::bn::{StateId, BooleanNetwork, VariableIterator};
 use crate::u32::sequential::{DisjointSets, DEAD, FRESH};
-use std::collections::HashMap;
 use crossbeam::thread;
 use crate::bitset::AtomicBitSet;
 
@@ -147,9 +146,9 @@ impl AtomicDisjointSets {
         }
     }
 
-    fn is_root(&self, key: &StateId) -> bool {
+    /*fn is_root(&self, key: &StateId) -> bool {
         return self.parent_pointer[key.value as usize].load(Ordering::SeqCst) == key.value
-    }
+    }*/
 
     fn find_root(&self, key: &StateId) -> usize {
         return self.find_root_by_index(key.value as usize)
