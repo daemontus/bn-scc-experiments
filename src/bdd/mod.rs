@@ -334,8 +334,8 @@ impl BDDWorker {
                         stack.pop();    // remove (l,r) from work stack
                     }
                     // We are missing the high link, we keep (l,r) on the stack and add new work
-                    (None, Some(new_high)) => stack.push((left_low, right_low)),
-                    (Some(new_low), None) => stack.push((left_high, right_high)),
+                    (None, Some(_)) => stack.push((left_low, right_low)),
+                    (Some(_), None) => stack.push((left_high, right_high)),
                     (None, None) => {
                         stack.push((left_low, right_low));
                         stack.push((left_high, right_high));
