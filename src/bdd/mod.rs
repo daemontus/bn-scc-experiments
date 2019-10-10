@@ -12,6 +12,7 @@ mod dot_printer;
 /// the specific BDD (for consistency checks) and low/high pointers correspond to the value
 /// of the node (one or zero). These two nodes are always placed at first two positions of
 /// the BDD vector, making the pointers cyclic.
+#[derive(Copy, Clone, Debug, Eq)]
 struct BDDNode {
     var: u32,
     low: u32,
@@ -238,6 +239,10 @@ mod tests {
         ]);
     }
 
+    fn load_expected_results(test_name: &str) -> String {
+        return std::fs::read_to_string(format!("test_results/bdd/{}", test_name)).expect("Cannot open result file.")
+    }
+
     #[test]
     fn bdd_node_one() {
         let one = BDDNode::mk_one(2);
@@ -294,8 +299,32 @@ mod tests {
         assert_eq!(load_expected_results("bdd_to_dot_pruned.dot"), dot);
     }
 
-    fn load_expected_results(test_name: &str) -> String {
-        return std::fs::read_to_string(format!("test_results/bdd/{}", test_name)).expect("Cannot open result file.")
+    #[test]
+    #[should_panic]
+    fn bdd_mk_var_unknown_index() {
+        let worker = BDDWorker::new_anonymous(2);
+        worker.mk_var(2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn bdd_mk_not_var_unknown_index() {
+        let worker = BDDWorker::new_anonymous(2);
+        worker.mk_not_var(2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn bdd_mk_var_unknown_name() {
+        let worker = BDDWorker::new(vec!["v1".to_string(), "v2".to_string()]);
+        worker.mk_named_var(&"v3".to_string());
+    }
+
+    #[test]
+    #[should_panic]
+    fn bdd_mk_not_var_unknown_name() {
+        let worker = BDDWorker::new(vec!["v1".to_string(), "v2".to_string()]);
+        worker.mk_not_named_var(&"v3".to_string());
     }
 
 }
