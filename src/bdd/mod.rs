@@ -12,7 +12,7 @@ mod dot_printer;
 /// the specific BDD (for consistency checks) and low/high pointers correspond to the value
 /// of the node (one or zero). These two nodes are always placed at first two positions of
 /// the BDD vector, making the pointers cyclic.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 struct BDDNode {
     var: u32,
     low: u32,
@@ -67,7 +67,7 @@ impl BDDNode {
 /// check.
 ///
 /// We do not implement operations directly on BDDs, instead we use BDD workers to manipulate BDDs.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BDD(Vec<BDDNode>);
 
 impl BDD {
@@ -228,6 +228,125 @@ impl BDDWorker {
         }
     }
 
+    pub fn mk_and(&self, left: &BDD, right: &BDD) -> BDD {
+        return self.apply(left, right, |l, r| -> Option<bool> {
+            if l.is_zero() || r.is_zero() { Some(false) }
+            else if l.is_one() && r.is_one() { Some(true) }
+            else { None }
+        });
+    }
+
+    /// Universal function to implement standard logical operators. The `terminal_lookup` function
+    /// takes two BDDNodes that we are currently considering and returns a fixed boolean value
+    /// if these two nodes can be evaluated by the function being implemented. For example,
+    /// if one of the nodes is `zero` and we are implementing `and`, we can immediately
+    /// evaluate to `false`.
+    fn apply<T>(&self, left: &BDD, right: &BDD, terminal_lookup: T) -> BDD
+        where T: Fn(BDDNode, BDDNode) -> Option<bool>
+    {
+        // Result holds the new BDD we are computing. Initially, we assume both `zero` and `one`
+        // nodes are present. In case the resulting BDD is empty, we have to remove the `one`
+        // node. We use a special variable to keep track of whether we have already seen
+        // `one` being used. This seems easier than adding `one` explicitly (less branches/code).
+        let mut result: Vec<BDDNode> = vec![self.mk_zero_node(), self.mk_one_node()];
+        let mut is_not_empty = false;
+
+        // Stack is used to explore the two BDDs "side by side" in DFS-like manner.
+        // The two values are always indices into the corresponding left/right BDDs that
+        // still need to be processed.
+        let mut stack: Vec<(usize, usize)> = Vec::new();
+        stack.push((left.last_index(), right.last_index())); // Initially, BDD roots are unprocessed.
+
+        // Finished holds indices of BDD node pairs that have been successfully computed.
+        // (That is, pairs that have been removed from stack at some point) It is used to avoid
+        // computing rediscovered pairs.
+        let mut finished: HashMap<(usize, usize), usize> = HashMap::new();
+
+        // Created is used to avoid duplicates. As soon as a node is inserted into result, its
+        // index is added to created. Hence we avoid creation of duplicate nodes.
+        let mut created: HashMap<BDDNode, usize> = HashMap::new();
+        created.insert(self.mk_zero_node(), 0);
+        created.insert(self.mk_one_node(), 1);
+
+        while let Some((l,r)) = stack.last() {
+            if finished.contains_key(&(*l, *r)) {
+                // (l,r) was requested for resolution, but is already resolved - we can just skip
+                stack.pop();
+            } else {
+                let (var_left, var_right) = (left.var(*l), right.var(*r));
+                // Based on variables and ordering, we are either going to advance in both BDDs,
+                // or just one. We advance BDD with smaller variable - smaller variables are
+                // "higher" in the graph (terminal nodes are "largest", root is smallest). Hence we
+                // advance the BDD where we are closer to the top.
+                let left_low; let left_high; let right_low; let right_high;
+                if var_left == var_right {
+                    // Nodes have the same variable, advance both BDDs
+                    left_low = left.low_link(*l); left_high = left.high_link(*l);
+                    right_low = right.low_link(*r); right_high = right.high_link(*r);
+                } else if var_left < var_right {
+                    left_low = left.low_link(*l); left_high = left.high_link(*l);
+                    right_low = *r; right_high = *r;
+                } else {
+                    left_low = *l; left_high = *l;
+                    right_low = right.low_link(*r); right_high = right.high_link(*r);
+                }
+                let decision_var = std::cmp::min(left.var(*l), right.var(*r));
+
+                let new_low: Option<usize> = if let Some(leaf) = terminal_lookup(left.0[left_low], right.0[right_low]) {
+                    // No need to explore further, the answer is determined!
+                    if !leaf { Some(0) } else { is_not_empty = true; Some(1) }  // return explicit index of a terminal
+                } else {
+                    // Try to get the value from cache
+                    finished.get(&(left_low, right_low)).map(|x| *x)
+                };
+
+                let new_high: Option<usize> = if let Some(leaf) = terminal_lookup(left.0[left_high], right.0[right_high]) {
+                    if !leaf { Some(0) } else { is_not_empty = true; Some(1) }
+                } else {
+                    finished.get(&(left_high, right_high)).map(|x| *x)
+                };
+
+                match (new_low, new_high) {
+                    (Some(new_low), Some(new_high)) => {
+                        // Both values are already computed, hence we can also complete this one
+                        if new_low == new_high {
+                            // There is no decision, just skip this node and point to either child
+                            finished.insert((*l, *r), new_low);
+                        } else {
+                            // There is a decision here.
+                            let node = BDDNode {
+                                var: decision_var as u32,
+                                low: new_low as u32,
+                                high: new_high as u32
+                            };
+                            if let Some(index) = created.get(&node) {
+                                // Node already exists, no need to add a new one, just make it
+                                // a result of this operation.
+                                finished.insert((*l, *r), *index);
+                            } else {
+                                // Node does not exist, it needs to be pushed to result.
+                                // Index of the node is result len before insertion.
+                                finished.insert((*l, *r), result.len());
+                                created.insert(node.clone(), result.len());
+                                result.push(node.clone());
+                            }
+                        }
+                        stack.pop();    // remove (l,r) from work stack
+                    }
+                    // We are missing the high link, we keep (l,r) on the stack and add new work
+                    (None, Some(new_high)) => stack.push((left_low, right_low)),
+                    (Some(new_low), None) => stack.push((left_high, right_high)),
+                    (None, None) => {
+                        stack.push((left_low, right_low));
+                        stack.push((left_high, right_high));
+                    }
+                }
+            }
+        }
+
+        return if is_not_empty { BDD(result) } else { self.mk_false() }
+    }
+
     /// Return true if the BDD represents the `false` formula.
     pub fn is_false(&self, bdd: &BDD) -> bool {
         return bdd.0.len() == 1
@@ -374,6 +493,17 @@ mod tests {
         ]);
 
         assert_eq!(expected, not_bdd);
+    }
+
+    #[test]
+    fn bdd_mk_and() {
+        let bdd = mk_small_test_bdd();
+        let worker = BDDWorker::new_anonymous(bdd.num_vars());
+        let not_bdd = worker.mk_not(&bdd);
+        let and = worker.mk_and(&bdd, &not_bdd);
+
+        println!("{:?}", and);
+        assert!(worker.is_false(&and));
     }
 
 }
