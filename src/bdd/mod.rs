@@ -12,7 +12,7 @@ mod dot_printer;
 /// the specific BDD (for consistency checks) and low/high pointers correspond to the value
 /// of the node (one or zero). These two nodes are always placed at first two positions of
 /// the BDD vector, making the pointers cyclic.
-#[derive(Copy, Clone, Debug, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 struct BDDNode {
     var: u32,
     low: u32,
@@ -67,6 +67,7 @@ impl BDDNode {
 /// check.
 ///
 /// We do not implement operations directly on BDDs, instead we use BDD workers to manipulate BDDs.
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct BDD(Vec<BDDNode>);
 
 impl BDD {
@@ -204,6 +205,29 @@ impl BDDWorker {
         }
     }
 
+    /// Create a BDD corresponding to `!phi` formula where `phi` is another
+    /// formula given as a BDD.
+    pub fn mk_not(&self, bdd: &BDD) -> BDD {
+        return if self.is_false(bdd) {
+            self.mk_true()
+        } else if self.is_true(bdd) {
+            self.mk_false()
+        } else {
+            let mut negation = bdd.0.clone();
+            // In each node, we swap links to `zero` and `one` (but nothing else).
+            // Note that this does not break the ordering of nodes because terminals have
+            // special position in the vector. (Shape of the graph is the same except for
+            // links to terminals which are ordered explicitly)
+            for i in 2..negation.len() {    // don't flip terminals
+                let node = negation.get_mut(i).unwrap();
+                // if link is 0/1, flip the bit using xor
+                if node.low <= 1 { node.low = node.low ^ 1; }
+                if node.high <= 1 { node.high = node.high ^ 1; }
+            }
+            BDD(negation)
+        }
+    }
+
     /// Return true if the BDD represents the `false` formula.
     pub fn is_false(&self, bdd: &BDD) -> bool {
         return bdd.0.len() == 1
@@ -325,6 +349,31 @@ mod tests {
     fn bdd_mk_not_var_unknown_name() {
         let worker = BDDWorker::new(vec!["v1".to_string(), "v2".to_string()]);
         worker.mk_not_named_var(&"v3".to_string());
+    }
+
+    #[test]
+    fn bdd_mk_not_constants() {
+        let worker = BDDWorker::new_anonymous(1);
+        let tt = worker.mk_true();
+        let ff = worker.mk_false();
+
+        assert_eq!(ff, worker.mk_not(&tt));
+        assert_eq!(tt, worker.mk_not(&ff));
+    }
+
+    #[test]
+    fn bdd_mk_not_basic() {
+        let bdd = mk_small_test_bdd();
+        let worker = BDDWorker::new_anonymous(bdd.num_vars());
+        // !(x4 & !x3) = !x4 | x3
+        let not_bdd = worker.mk_not(&bdd);
+        let expected = BDD(vec![
+            BDDNode::mk_zero(5), BDDNode::mk_one(5),
+            BDDNode { var: 3, low: 0, high: 1 },
+            BDDNode { var: 4, low: 1, high: 2 }
+        ]);
+
+        assert_eq!(expected, not_bdd);
     }
 
 }
