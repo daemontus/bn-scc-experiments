@@ -228,12 +228,49 @@ impl BDDWorker {
         }
     }
 
+    /// Create a BDD corresponding to logical conjunction: `left & right`.
     pub fn mk_and(&self, left: &BDD, right: &BDD) -> BDD {
         return self.apply(left, right, |l, r| -> Option<bool> {
             if l.is_zero() || r.is_zero() { Some(false) }
             else if l.is_one() && r.is_one() { Some(true) }
             else { None }
         });
+    }
+
+    /// Create a BDD corresponding to logical disjunction: `left | right`.
+    pub fn mk_or(&self, left: &BDD, right: &BDD) -> BDD {
+        return self.apply(left, right, |l, r| -> Option<bool> {
+            if l.is_one() || r.is_one() { Some(true) }
+            else if l.is_zero() && r.is_zero() { Some(false) }
+            else { None }
+        })
+    }
+
+    /// Create a BDD corresponding to logical implication: `left -> right`.
+    pub fn mk_implies(&self, left: &BDD, right: &BDD) -> BDD {
+        return self.apply(left, right, |l, r| -> Option<bool> {
+            if l.is_zero() { Some(true) }
+            else if l.is_one() && r.is_zero() { Some(false) }
+            else { None }
+        })
+    }
+
+    /// Create a BDD corresponding to logical equivalence: `left <-> right`.
+    pub fn mk_equals(&self, left: &BDD, right: &BDD) -> BDD {
+        return self.apply(left, right, |l, r| -> Option<bool> {
+            if !l.is_terminal() || !r.is_terminal() { None } else {
+                Some(l == r)
+            }
+        })
+    }
+
+    /// Create a BDD corresponding to logical exclusive or: `left ^ right`.
+    pub fn mk_xor(&self, left: &BDD, right: &BDD) -> BDD {
+        return self.apply(left, right, |l, r| -> Option<bool> {
+            if !l.is_terminal() || !r.is_terminal() { None } else {
+                Some(l.is_one() != r.is_one())
+            }
+        })
     }
 
     /// Universal function to implement standard logical operators. The `terminal_lookup` function
